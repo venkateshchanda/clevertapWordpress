@@ -1,0 +1,135 @@
+{
+    "containerDefinitions": [
+        {
+            "command": [
+                "certonly",
+                "--webroot",
+                "--webroot-path=/var/www/html",
+                "--email",
+                "sammy@example.com",
+                "--agree-tos",
+                "--no-eff-email",
+                "--staging",
+                "-d",
+                "example.com",
+                "-d",
+                "www.example.com"
+            ],
+            "essential": true,
+            "image": "certbot/certbot",
+            "mountPoints": [
+                {
+                    "containerPath": "/etc/letsencrypt",
+                    "sourceVolume": "Certbot-Etc"
+                },
+                {
+                    "containerPath": "/var/www/html",
+                    "sourceVolume": "Wordpress"
+                }
+            ],
+            "name": "certbot"
+        },
+        {
+            "command": [
+                "--default-authentication-plugin=mysql_native_password"
+            ],
+            "environment": [
+                {
+                    "name": "MYSQL_DATABASE",
+                    "value": "wordpress"
+                }
+            ],
+            "essential": true,
+            "image": "mysql:8.0",
+            "mountPoints": [
+                {
+                    "containerPath": "/var/lib/mysql",
+                    "sourceVolume": "Dbdata"
+                }
+            ],
+            "name": "db"
+        },
+        {
+            "essential": true,
+            "image": "nginx:1.15.12-alpine",
+            "mountPoints": [
+                {
+                    "containerPath": "/var/www/html",
+                    "sourceVolume": "Wordpress"
+                },
+                {
+                    "containerPath": "/etc/nginx/conf.d",
+                    "sourceVolume": "_Nginx-Conf"
+                },
+                {
+                    "containerPath": "/etc/letsencrypt",
+                    "sourceVolume": "Certbot-Etc"
+                }
+            ],
+            "name": "webserver",
+            "portMappings": [
+                {
+                    "containerPort": 80,
+                    "hostPort": 80
+                }
+            ]
+        },
+        {
+            "environment": [
+                {
+                    "name": "WORDPRESS_DB_HOST",
+                    "value": "db:3306"
+                },
+                {
+                    "name": "WORDPRESS_DB_USER",
+                    "value": "$MYSQL_USER"
+                },
+                {
+                    "name": "WORDPRESS_DB_PASSWORD",
+                    "value": "$MYSQL_PASSWORD"
+                },
+                {
+                    "name": "WORDPRESS_DB_NAME",
+                    "value": "wordpress"
+                }
+            ],
+            "essential": true,
+            "image": "wordpress:5.1.1-fpm-alpine",
+            "mountPoints": [
+                {
+                    "containerPath": "/var/www/html",
+                    "sourceVolume": "Wordpress"
+                }
+            ],
+            "name": "wordpress"
+        }
+    ],
+    "family": "",
+    "volumes": [
+        {
+            "host": {
+                "sourcePath": "dbdata"
+            },
+            "name": "Dbdata"
+        },
+        {
+            "host": {
+                "sourcePath": "wordpress"
+            },
+            "name": "Wordpress"
+        },
+        {
+            "host": {
+                "sourcePath": "./nginx-conf"
+            },
+            "name": "_Nginx-Conf"
+        },
+        {
+            "host": {
+                "sourcePath": "certbot-etc"
+            },
+            "name": "Certbot-Etc"
+        }
+    ]
+}
+
